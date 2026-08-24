@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: ./backend
+    container_name: vaultx-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/vaultx.db:/app/vaultx.db
+      - ./backend/storage:/app/storage
+    environment:
+      - PYTHONUNBUFFERED=1
