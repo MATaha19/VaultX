@@ -36,6 +36,15 @@ function App() {
 
   const [loading, setLoading] = useState(false);
 
+  // Username availability check (registration form)
+  const [usernameStatus, setUsernameStatus] = useState("idle");
+  // "idle" | "checking" | "available" | "taken" | "invalid"
+  const [usernameStatusMessage, setUsernameStatusMessage] = useState("");
+
+  // Crypto timing (shown on dashboard)
+  const [encryptionTime, setEncryptionTime] = useState(null);
+  const [decryptionTime, setDecryptionTime] = useState(null);
+
   const totalFiles =
     receivedFiles.length + sentFiles.length;
 
@@ -54,6 +63,72 @@ function App() {
       loadFiles(savedToken);
     }
   }, []);
+
+  // Live duplicate-username check on the registration form
+  useEffect(() => {
+    if (page !== "register") {
+      return;
+    }
+
+    const trimmed = username.trim();
+
+    if (!trimmed) {
+      setUsernameStatus("idle");
+      setUsernameStatusMessage("");
+      return;
+    }
+
+    if (trimmed.length < 3) {
+      setUsernameStatus("invalid");
+      setUsernameStatusMessage(
+        "Username must be at least 3 characters"
+      );
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameStatusMessage("Checking availability...");
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/auth/check-username/${encodeURIComponent(
+            trimmed
+          )}`
+        );
+
+        if (!response.ok) {
+          // Endpoint missing, backend not redeployed yet, or a
+          // server error — never guess "taken" here. Fall back
+          // to idle so the button isn't blocked; the register
+          // endpoint still enforces uniqueness on submit.
+          setUsernameStatus("idle");
+          setUsernameStatusMessage("");
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.available) {
+          setUsernameStatus("available");
+          setUsernameStatusMessage("Username is available");
+        } else {
+          setUsernameStatus("taken");
+          setUsernameStatusMessage(
+            data.reason || "Username is already taken"
+          );
+        }
+      } catch (err) {
+        console.error("Username check error:", err);
+        // Don't block registration on a network hiccup;
+        // the server still enforces uniqueness on submit.
+        setUsernameStatus("idle");
+        setUsernameStatusMessage("");
+      }
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [username, page]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -156,6 +231,12 @@ function App() {
 
     setError("");
     setMessage("");
+
+    if (usernameStatus === "taken") {
+      setError("That username is already taken. Please choose another.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -197,6 +278,9 @@ function App() {
       setUsername("");
       setEmail("");
       setPassword("");
+
+      setUsernameStatus("idle");
+      setUsernameStatusMessage("");
 
       setMessage(
         "Account created successfully. Please login."
@@ -419,6 +503,10 @@ function App() {
         throw new Error(detail);
       }
 
+      if (typeof data.encryption_time_ms === "number") {
+        setEncryptionTime(data.encryption_time_ms);
+      }
+
       setMessage(
         "File encrypted and sent successfully."
       );
@@ -499,6 +587,18 @@ function App() {
         } catch {}
 
         throw new Error(detail);
+      }
+
+      const decryptionHeader = response.headers.get(
+        "X-VaultX-Decryption-Time-Ms"
+      );
+
+      if (decryptionHeader !== null) {
+        const parsedTime = Number(decryptionHeader);
+
+        if (!Number.isNaN(parsedTime)) {
+          setDecryptionTime(parsedTime);
+        }
       }
 
       const blob =
@@ -638,6 +738,9 @@ function App() {
 
     setExpiration("24");
     setCustomHours("");
+
+    setEncryptionTime(null);
+    setDecryptionTime(null);
 
     setMessage("");
     setError("");
@@ -842,6 +945,30 @@ function App() {
               required
             />
 
+            {usernameStatusMessage && (
+              <div
+                className={
+                  usernameStatus === "available"
+                    ? "success"
+                    : usernameStatus === "checking"
+                    ? "subtitle"
+                    : "error"
+                }
+                style={{
+                  margin: 0,
+                  padding: "8px 12px",
+                  fontSize: "13px",
+                }}
+              >
+                {usernameStatus === "available"
+                  ? "✓ "
+                  : usernameStatus === "checking"
+                  ? "⏳ "
+                  : "✕ "}
+                {usernameStatusMessage}
+              </div>
+            )}
+
             <label>
               Email
             </label>
@@ -877,7 +1004,11 @@ function App() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={
+                loading ||
+                usernameStatus === "taken" ||
+                usernameStatus === "checking"
+              }
             >
               {loading
                 ? "Creating account..."
@@ -1028,6 +1159,46 @@ function App() {
 
                 <span>
                   Total Transfers
+                </span>
+              </div>
+
+            </div>
+
+            <div className="stat-card">
+
+              <div className="stat-icon">
+                ⚡
+              </div>
+
+              <div>
+                <strong>
+                  {encryptionTime !== null
+                    ? `${encryptionTime} ms`
+                    : "—"}
+                </strong>
+
+                <span>
+                  Last Encryption Time
+                </span>
+              </div>
+
+            </div>
+
+            <div className="stat-card">
+
+              <div className="stat-icon">
+                🔓
+              </div>
+
+              <div>
+                <strong>
+                  {decryptionTime !== null
+                    ? `${decryptionTime} ms`
+                    : "—"}
+                </strong>
+
+                <span>
+                  Last Decryption Time
                 </span>
               </div>
 
