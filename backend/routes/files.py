@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import os
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -255,8 +256,10 @@ async def upload_file(
     )
 
     # -----------------------------------------------------
-    # AES-256-GCM
+    # AES-256-GCM (timed)
     # -----------------------------------------------------
+
+    encryption_start = time.perf_counter()
 
     aes_key = AESGCM.generate_key(
         bit_length=256
@@ -314,6 +317,11 @@ async def upload_file(
             status_code=500,
             detail="Failed to protect encryption key"
         )
+
+    encryption_time_ms = round(
+        (time.perf_counter() - encryption_start) * 1000,
+        3
+    )
 
     # -----------------------------------------------------
     # Encrypted filename
@@ -393,7 +401,8 @@ async def upload_file(
         "expires_at": transfer.expires_at,
         "encryption": "AES-256-GCM",
         "key_protection": "RSA-2048",
-        "integrity": "SHA-256"
+        "integrity": "SHA-256",
+        "encryption_time_ms": encryption_time_ms
     }
 
 
@@ -618,6 +627,10 @@ def download_file(
             current_user.private_key
         )
 
+        # Decryption timing starts here (RSA + AES steps only,
+        # excludes disk reads and integrity check)
+        decryption_start = time.perf_counter()
+
         # RSA decrypt AES key
         aes_key = private_key.decrypt(
             encrypted_aes_key,
@@ -637,6 +650,11 @@ def download_file(
             nonce,
             encrypted_data,
             None
+        )
+
+        decryption_time_ms = round(
+            (time.perf_counter() - decryption_start) * 1000,
+            3
         )
 
         # SHA-256 verification
@@ -675,7 +693,8 @@ def download_file(
             "X-VaultX-Encryption": "AES-256-GCM",
             "X-VaultX-Key-Protection": "RSA-2048",
             "X-VaultX-Integrity": "SHA-256",
-            "X-VaultX-Integrity-Verified": "true"
+            "X-VaultX-Integrity-Verified": "true",
+            "X-VaultX-Decryption-Time-Ms": str(decryption_time_ms)
         }
     )
 

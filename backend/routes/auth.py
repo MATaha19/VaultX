@@ -16,6 +16,7 @@ from fastapi.security import (
 )
 
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -211,7 +212,7 @@ def register(
 
     existing_username = (
         db.query(User)
-        .filter(User.username == username)
+        .filter(func.lower(User.username) == func.lower(username))
         .first()
     )
 
@@ -293,6 +294,59 @@ def register(
 
 
 # =========================================================
+# CHECK USERNAME AVAILABILITY
+# =========================================================
+
+@router.get("/check-username/{username}")
+def check_username_availability(
+    username: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Check whether a username is available.
+    Used by the registration form for live duplicate checking.
+    Case-insensitive, matching the check performed at registration.
+    """
+
+    username = username.strip()
+
+    if not username:
+        return {
+            "available": False,
+            "reason": "Username cannot be empty",
+        }
+
+    if len(username) < 3:
+        return {
+            "available": False,
+            "reason": "Username must be at least 3 characters",
+        }
+
+    if len(username) > 50:
+        return {
+            "available": False,
+            "reason": "Username cannot exceed 50 characters",
+        }
+
+    existing_username = (
+        db.query(User)
+        .filter(func.lower(User.username) == func.lower(username))
+        .first()
+    )
+
+    if existing_username:
+        return {
+            "available": False,
+            "reason": "Username already exists",
+        }
+
+    return {
+        "available": True,
+        "reason": None,
+    }
+
+
+# =========================================================
 # LOGIN
 # =========================================================
 
@@ -330,7 +384,7 @@ def login(
 
     user = (
         db.query(User)
-        .filter(User.username == username)
+        .filter(func.lower(User.username) == func.lower(username))
         .first()
     )
 
