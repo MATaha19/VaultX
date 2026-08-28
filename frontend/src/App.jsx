@@ -1,820 +1,1964 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const API_URL = "https://vaultx-2x2s.onrender.com";
+
+const API_URL =
+  "https://vaultx-2x2s.onrender.com";
+
 
 function App() {
+
+  // =====================================================
+  // PAGE / AUTHENTICATION
+  // =====================================================
+
   const [page, setPage] = useState(
     localStorage.getItem("vaultx_token")
       ? "dashboard"
       : "login"
   );
 
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] =
+    useState("");
 
-  const [token, setToken] = useState(
-    localStorage.getItem("vaultx_token") || ""
-  );
+  const [email, setEmail] =
+    useState("");
 
-  const [currentUser, setCurrentUser] = useState(
-    localStorage.getItem("vaultx_username") || ""
-  );
+  const [password, setPassword] =
+    useState("");
 
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [token, setToken] =
+    useState(
+      localStorage.getItem(
+        "vaultx_token"
+      ) || ""
+    );
 
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [recipient, setRecipient] = useState("");
+  const [currentUser, setCurrentUser] =
+    useState(
+      localStorage.getItem(
+        "vaultx_username"
+      ) || ""
+    );
 
-  const [expiration, setExpiration] = useState("24");
-  const [customHours, setCustomHours] = useState("");
 
-  const [receivedFiles, setReceivedFiles] = useState([]);
-  const [sentFiles, setSentFiles] = useState([]);
+  // =====================================================
+  // MESSAGES
+  // =====================================================
 
-  const [loading, setLoading] = useState(false);
+  const [message, setMessage] =
+    useState("");
 
-  // Username availability check (registration form)
-  const [usernameStatus, setUsernameStatus] = useState("idle");
-  // "idle" | "checking" | "available" | "taken" | "invalid"
-  const [usernameStatusMessage, setUsernameStatusMessage] = useState("");
+  const [error, setError] =
+    useState("");
 
-  // Crypto timing (shown on dashboard)
-  const [encryptionTime, setEncryptionTime] = useState(null);
-  const [decryptionTime, setDecryptionTime] = useState(null);
+
+  // =====================================================
+  // FILE INPUT
+  // =====================================================
+
+  const [selectedFile, setSelectedFile] =
+    useState(null);
+
+  const [recipient, setRecipient] =
+    useState("");
+
+
+  // =====================================================
+  // EXPIRATION
+  // =====================================================
+
+  const [expiration, setExpiration] =
+    useState("24");
+
+  const [customHours, setCustomHours] =
+    useState("");
+
+
+  // =====================================================
+  // FILE LISTS
+  // =====================================================
+
+  const [receivedFiles, setReceivedFiles] =
+    useState([]);
+
+  const [sentFiles, setSentFiles] =
+    useState([]);
+
+
+  // =====================================================
+  // LOADING
+  // =====================================================
+
+  const [loading, setLoading] =
+    useState(false);
+
+
+  // =====================================================
+  // USERNAME AVAILABILITY
+  // =====================================================
+
+  const [usernameStatus, setUsernameStatus] =
+    useState("idle");
+
+  const [usernameStatusMessage, setUsernameStatusMessage] =
+    useState("");
+
+
+  // =====================================================
+  // PERFORMANCE MEASUREMENTS
+  // =====================================================
+
+  const [encryptionTime, setEncryptionTime] =
+    useState(() => {
+
+      const saved =
+        localStorage.getItem(
+          "vaultx_encryption_time"
+        );
+
+      return saved !== null
+        ? Number(saved)
+        : null;
+    });
+
+
+  const [decryptionTime, setDecryptionTime] =
+    useState(() => {
+
+      const saved =
+        localStorage.getItem(
+          "vaultx_decryption_time"
+        );
+
+      return saved !== null
+        ? Number(saved)
+        : null;
+    });
+
+
+  const [transferTime, setTransferTime] =
+    useState(() => {
+
+      const saved =
+        localStorage.getItem(
+          "vaultx_transfer_time"
+        );
+
+      return saved !== null
+        ? Number(saved)
+        : null;
+    });
+
+
+  const [transferSpeed, setTransferSpeed] =
+    useState(() => {
+
+      const saved =
+        localStorage.getItem(
+          "vaultx_transfer_speed"
+        );
+
+      return saved !== null
+        ? Number(saved)
+        : null;
+    });
+
+
+  const [performanceFileSize, setPerformanceFileSize] =
+    useState(() => {
+
+      const saved =
+        localStorage.getItem(
+          "vaultx_file_size"
+        );
+
+      return saved !== null
+        ? Number(saved)
+        : null;
+    });
+
+
+  // =====================================================
+  // TOTAL FILES
+  // =====================================================
 
   const totalFiles =
-    receivedFiles.length + sentFiles.length;
+    receivedFiles.length +
+    sentFiles.length;
+
+
+  // =====================================================
+  // SAVE PERFORMANCE VALUES
+  // =====================================================
+
+  const savePerformance = ({
+    encryption = encryptionTime,
+    decryption = decryptionTime,
+    transfer = transferTime,
+    speed = transferSpeed,
+    fileSize = performanceFileSize,
+  }) => {
+
+    if (
+      typeof encryption ===
+      "number" &&
+      Number.isFinite(encryption)
+    ) {
+
+      localStorage.setItem(
+        "vaultx_encryption_time",
+        String(encryption)
+      );
+
+      setEncryptionTime(
+        encryption
+      );
+    }
+
+
+    if (
+      typeof decryption ===
+      "number" &&
+      Number.isFinite(decryption)
+    ) {
+
+      localStorage.setItem(
+        "vaultx_decryption_time",
+        String(decryption)
+      );
+
+      setDecryptionTime(
+        decryption
+      );
+    }
+
+
+    if (
+      typeof transfer ===
+      "number" &&
+      Number.isFinite(transfer)
+    ) {
+
+      localStorage.setItem(
+        "vaultx_transfer_time",
+        String(transfer)
+      );
+
+      setTransferTime(
+        transfer
+      );
+    }
+
+
+    if (
+      typeof speed ===
+      "number" &&
+      Number.isFinite(speed)
+    ) {
+
+      localStorage.setItem(
+        "vaultx_transfer_speed",
+        String(speed)
+      );
+
+      setTransferSpeed(
+        speed
+      );
+    }
+
+
+    if (
+      typeof fileSize ===
+      "number" &&
+      Number.isFinite(fileSize)
+    ) {
+
+      localStorage.setItem(
+        "vaultx_file_size",
+        String(fileSize)
+      );
+
+      setPerformanceFileSize(
+        fileSize
+      );
+    }
+  };
+
+
+  // =====================================================
+  // INITIAL LOAD
+  // =====================================================
 
   useEffect(() => {
+
     const savedToken =
-      localStorage.getItem("vaultx_token");
+      localStorage.getItem(
+        "vaultx_token"
+      );
 
     const savedUsername =
-      localStorage.getItem("vaultx_username");
+      localStorage.getItem(
+        "vaultx_username"
+      );
 
-    if (savedToken && savedUsername) {
-      setToken(savedToken);
-      setCurrentUser(savedUsername);
-      setPage("dashboard");
+    if (
+      savedToken &&
+      savedUsername
+    ) {
 
-      loadFiles(savedToken);
+      setToken(
+        savedToken
+      );
+
+      setCurrentUser(
+        savedUsername
+      );
+
+      setPage(
+        "dashboard"
+      );
+
+      loadFiles(
+        savedToken
+      );
     }
+
   }, []);
 
-  // Live duplicate-username check on the registration form
+
+  // =====================================================
+  // USERNAME AVAILABILITY
+  // =====================================================
+
   useEffect(() => {
-    if (page !== "register") {
+
+    if (
+      page !== "register"
+    ) {
       return;
     }
 
-    const trimmed = username.trim();
+    const trimmed =
+      username.trim();
 
     if (!trimmed) {
-      setUsernameStatus("idle");
-      setUsernameStatusMessage("");
+
+      setUsernameStatus(
+        "idle"
+      );
+
+      setUsernameStatusMessage(
+        ""
+      );
+
       return;
     }
 
-    if (trimmed.length < 3) {
-      setUsernameStatus("invalid");
+    if (
+      trimmed.length < 3
+    ) {
+
+      setUsernameStatus(
+        "invalid"
+      );
+
       setUsernameStatusMessage(
         "Username must be at least 3 characters"
       );
+
       return;
     }
 
-    setUsernameStatus("checking");
-    setUsernameStatusMessage("Checking availability...");
+    setUsernameStatus(
+      "checking"
+    );
 
-    const timeoutId = setTimeout(async () => {
+    setUsernameStatusMessage(
+      "Checking availability..."
+    );
+
+
+    const timeoutId =
+      setTimeout(
+        async () => {
+
+          try {
+
+            const response =
+              await fetch(
+                `${API_URL}/auth/check-username/${encodeURIComponent(
+                  trimmed
+                )}`
+              );
+
+
+            if (!response.ok) {
+
+              setUsernameStatus(
+                "idle"
+              );
+
+              setUsernameStatusMessage(
+                ""
+              );
+
+              return;
+            }
+
+
+            const data =
+              await response.json();
+
+
+            if (
+              data.available
+            ) {
+
+              setUsernameStatus(
+                "available"
+              );
+
+              setUsernameStatusMessage(
+                "Username is available"
+              );
+
+            } else {
+
+              setUsernameStatus(
+                "taken"
+              );
+
+              setUsernameStatusMessage(
+                data.reason ||
+                "Username is already taken"
+              );
+            }
+
+          } catch (err) {
+
+            console.error(
+              "Username check error:",
+              err
+            );
+
+            setUsernameStatus(
+              "idle"
+            );
+
+            setUsernameStatusMessage(
+              ""
+            );
+          }
+
+        },
+        400
+      );
+
+
+    return () =>
+      clearTimeout(
+        timeoutId
+      );
+
+  }, [
+    username,
+    page,
+  ]);
+
+
+  // =====================================================
+  // LOGIN
+  // =====================================================
+
+  const handleLogin =
+    async (e) => {
+
+      e.preventDefault();
+
+      setError("");
+      setMessage("");
+
+      setLoading(
+        true
+      );
+
+
       try {
-        const response = await fetch(
-          `${API_URL}/auth/check-username/${encodeURIComponent(
-            trimmed
-          )}`
+
+        const formData =
+          new URLSearchParams();
+
+
+        formData.append(
+          "username",
+          username.trim()
         );
 
-        if (!response.ok) {
-          // Endpoint missing, backend not redeployed yet, or a
-          // server error — never guess "taken" here. Fall back
-          // to idle so the button isn't blocked; the register
-          // endpoint still enforces uniqueness on submit.
-          setUsernameStatus("idle");
-          setUsernameStatusMessage("");
-          return;
-        }
+        formData.append(
+          "password",
+          password
+        );
 
-        const data = await response.json();
 
-        if (data.available) {
-          setUsernameStatus("available");
-          setUsernameStatusMessage("Username is available");
-        } else {
-          setUsernameStatus("taken");
-          setUsernameStatusMessage(
-            data.reason || "Username is already taken"
+        const response =
+          await fetch(
+            `${API_URL}/auth/login`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/x-www-form-urlencoded",
+              },
+
+              body: formData,
+            }
           );
-        }
-      } catch (err) {
-        console.error("Username check error:", err);
-        // Don't block registration on a network hiccup;
-        // the server still enforces uniqueness on submit.
-        setUsernameStatus("idle");
-        setUsernameStatusMessage("");
-      }
-    }, 400);
 
-    return () => clearTimeout(timeoutId);
-  }, [username, page]);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    setError("");
-    setMessage("");
-    setLoading(true);
-
-    try {
-      const formData = new URLSearchParams();
-
-      formData.append(
-        "username",
-        username.trim()
-      );
-
-      formData.append(
-        "password",
-        password
-      );
-
-      const response = await fetch(
-        `${API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded",
-          },
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        let detail =
-          "Invalid username or password";
-
-        if (typeof data.detail === "string") {
-          detail = data.detail;
-        } else if (Array.isArray(data.detail)) {
-          detail = data.detail
-            .map(
-              (item) =>
-                item.msg || "Invalid input"
-            )
-            .join(", ");
-        }
-
-        throw new Error(detail);
-      }
-
-      if (!data.access_token) {
-        throw new Error(
-          "Login succeeded but no access token was returned."
-        );
-      }
-
-      const accessToken =
-        data.access_token;
-
-      const loggedInUsername =
-        data.username ||
-        username.trim();
-
-      localStorage.setItem(
-        "vaultx_token",
-        accessToken
-      );
-
-      localStorage.setItem(
-        "vaultx_username",
-        loggedInUsername
-      );
-
-      setToken(accessToken);
-      setCurrentUser(loggedInUsername);
-
-      setUsername("");
-      setPassword("");
-
-      setPage("dashboard");
-      setMessage("Login successful.");
-
-      await loadFiles(accessToken);
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        err.message || "Login failed."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-
-    setError("");
-    setMessage("");
-
-    if (usernameStatus === "taken") {
-      setError("That username is already taken. Please choose another.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch(
-        `${API_URL}/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: username.trim(),
-            email: email.trim(),
-            password,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        let detail =
-          "Registration failed.";
-
-        if (typeof data.detail === "string") {
-          detail = data.detail;
-        } else if (Array.isArray(data.detail)) {
-          detail = data.detail
-            .map(
-              (item) =>
-                item.msg || "Invalid input"
-            )
-            .join(", ");
-        }
-
-        throw new Error(detail);
-      }
-
-      setUsername("");
-      setEmail("");
-      setPassword("");
-
-      setUsernameStatus("idle");
-      setUsernameStatusMessage("");
-
-      setMessage(
-        "Account created successfully. Please login."
-      );
-
-      setPage("login");
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        err.message ||
-          "Registration failed."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadFiles = async (authToken) => {
-    if (!authToken) {
-      return;
-    }
-
-    try {
-      const receivedResponse =
-        await fetch(
-          `${API_URL}/files/my-files`,
-          {
-            method: "GET",
-            headers: {
-              Authorization:
-                `Bearer ${authToken}`,
-            },
-          }
-        );
-
-      if (
-        receivedResponse.status === 401
-      ) {
-        handleSessionExpired();
-        return;
-      }
-
-      if (receivedResponse.ok) {
-        const data =
-          await receivedResponse.json();
-
-        setReceivedFiles(
-          Array.isArray(data.files)
-            ? data.files
-            : []
-        );
-      }
-
-      const sentResponse =
-        await fetch(
-          `${API_URL}/files/sent`,
-          {
-            method: "GET",
-            headers: {
-              Authorization:
-                `Bearer ${authToken}`,
-            },
-          }
-        );
-
-      if (
-        sentResponse.status === 401
-      ) {
-        handleSessionExpired();
-        return;
-      }
-
-      if (sentResponse.ok) {
-        const data =
-          await sentResponse.json();
-
-        setSentFiles(
-          Array.isArray(data.files)
-            ? data.files
-            : []
-        );
-      }
-    } catch (err) {
-      console.error(
-        "File list error:",
-        err
-      );
-    }
-  };
-
-  const handleSessionExpired = () => {
-    localStorage.removeItem(
-      "vaultx_token"
-    );
-
-    localStorage.removeItem(
-      "vaultx_username"
-    );
-
-    setToken("");
-    setCurrentUser("");
-
-    setReceivedFiles([]);
-    setSentFiles([]);
-
-    setPage("login");
-
-    setError(
-      "Your session has expired. Please login again."
-    );
-  };
-
-  const getExpirationHours = () => {
-    if (expiration === "custom") {
-      return Number(customHours);
-    }
-
-    return Number(expiration);
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
-
-    setError("");
-    setMessage("");
-
-    if (!token) {
-      handleSessionExpired();
-      return;
-    }
-
-    if (!selectedFile) {
-      setError(
-        "Please select a file."
-      );
-      return;
-    }
-
-    if (!recipient.trim()) {
-      setError(
-        "Please enter recipient username."
-      );
-      return;
-    }
-
-    const hours =
-      getExpirationHours();
-
-    if (
-      !Number.isFinite(hours) ||
-      hours <= 0
-    ) {
-      setError(
-        "Please enter a valid expiration period."
-      );
-      return;
-    }
-
-    if (hours > 168) {
-      setError(
-        "Maximum expiration is 168 hours (7 days)."
-      );
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const formData =
-        new FormData();
-
-      formData.append(
-        "file",
-        selectedFile
-      );
-
-      formData.append(
-        "recipient_username",
-        recipient.trim()
-      );
-
-      formData.append(
-        "expiration_hours",
-        String(hours)
-      );
-
-      const response =
-        await fetch(
-          `${API_URL}/files/upload`,
-          {
-            method: "POST",
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-            body: formData,
-          }
-        );
-
-      if (response.status === 401) {
-        handleSessionExpired();
-        return;
-      }
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        let detail =
-          "File transfer failed.";
-
-        if (
-          typeof data.detail ===
-          "string"
-        ) {
-          detail = data.detail;
-        }
-
-        throw new Error(detail);
-      }
-
-      if (typeof data.encryption_time_ms === "number") {
-        setEncryptionTime(data.encryption_time_ms);
-      }
-
-      setMessage(
-        "File encrypted and sent successfully."
-      );
-
-      setSelectedFile(null);
-      setRecipient("");
-      setExpiration("24");
-      setCustomHours("");
-
-      const fileInput =
-        document.getElementById(
-          "file-upload"
-        );
-
-      if (fileInput) {
-        fileInput.value = "";
-      }
-
-      await loadFiles(token);
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        err.message ||
-          "File transfer failed."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownload = async (
-    fileId,
-    filename
-  ) => {
-    setError("");
-    setMessage("");
-
-    if (!token) {
-      handleSessionExpired();
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response =
-        await fetch(
-          `${API_URL}/files/${fileId}/download`,
-          {
-            method: "GET",
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
-        );
-
-      if (response.status === 401) {
-        handleSessionExpired();
-        return;
-      }
-
-      if (!response.ok) {
-        let detail =
-          "Download failed.";
+        let data = {};
 
         try {
-          const data =
+          data =
             await response.json();
+        } catch {
+          data = {};
+        }
+
+
+        if (
+          !response.ok
+        ) {
+
+          let detail =
+            "Invalid username or password";
+
 
           if (
             typeof data.detail ===
             "string"
           ) {
-            detail = data.detail;
+
+            detail =
+              data.detail;
+
+          } else if (
+            Array.isArray(
+              data.detail
+            )
+          ) {
+
+            detail =
+              data.detail
+                .map(
+                  (item) =>
+                    item.msg ||
+                    "Invalid input"
+                )
+                .join(", ");
           }
-        } catch {}
 
-        throw new Error(detail);
-      }
 
-      const decryptionHeader = response.headers.get(
-        "X-VaultX-Decryption-Time-Ms"
-      );
-
-      if (decryptionHeader !== null) {
-        const parsedTime = Number(decryptionHeader);
-
-        if (!Number.isNaN(parsedTime)) {
-          setDecryptionTime(parsedTime);
+          throw new Error(
+            detail
+          );
         }
+
+
+        if (
+          !data.access_token
+        ) {
+
+          throw new Error(
+            "Login succeeded but no access token was returned."
+          );
+        }
+
+
+        const accessToken =
+          data.access_token;
+
+
+        const loggedInUsername =
+          data.username ||
+          username.trim();
+
+
+        localStorage.setItem(
+          "vaultx_token",
+          accessToken
+        );
+
+        localStorage.setItem(
+          "vaultx_username",
+          loggedInUsername
+        );
+
+
+        setToken(
+          accessToken
+        );
+
+        setCurrentUser(
+          loggedInUsername
+        );
+
+
+        setUsername("");
+        setPassword("");
+
+
+        setPage(
+          "dashboard"
+        );
+
+
+        setMessage(
+          "Login successful."
+        );
+
+
+        await loadFiles(
+          accessToken
+        );
+
+      } catch (err) {
+
+        console.error(
+          err
+        );
+
+        setError(
+          err.message ||
+          "Login failed."
+        );
+
+      } finally {
+
+        setLoading(
+          false
+        );
       }
+    };
 
-      const blob =
-        await response.blob();
 
-      const url =
-        window.URL.createObjectURL(
-          blob
+  // =====================================================
+  // REGISTER
+  // =====================================================
+
+  const handleRegister =
+    async (e) => {
+
+      e.preventDefault();
+
+      setError("");
+      setMessage("");
+
+
+      if (
+        usernameStatus ===
+        "taken"
+      ) {
+
+        setError(
+          "That username is already taken. Please choose another."
         );
 
-      const link =
-        document.createElement("a");
-
-      link.href = url;
-
-      link.download =
-        filename ||
-        "downloaded_file";
-
-      document.body.appendChild(
-        link
-      );
-
-      link.click();
-
-      link.remove();
-
-      window.URL.revokeObjectURL(
-        url
-      );
-
-      setMessage(
-        "File decrypted and downloaded successfully."
-      );
-    } catch (err) {
-      console.error(err);
-
-      setError(
-        err.message ||
-          "Download failed."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRevoke = async (
-    fileId
-  ) => {
-    setError("");
-    setMessage("");
-
-    if (!token) {
-      handleSessionExpired();
-      return;
-    }
-
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to revoke this file? The recipient will no longer be able to download it."
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response =
-        await fetch(
-          `${API_URL}/files/${fileId}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
-        );
-
-      if (response.status === 401) {
-        handleSessionExpired();
         return;
       }
 
-      const data =
-        await response.json();
 
-      if (!response.ok) {
-        throw new Error(
-          typeof data.detail ===
-          "string"
-            ? data.detail
-            : "Failed to revoke file."
+      setLoading(
+        true
+      );
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_URL}/auth/register`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                username:
+                  username.trim(),
+
+                email:
+                  email.trim(),
+
+                password:
+                  password,
+              }),
+            }
+          );
+
+
+        let data = {};
+
+        try {
+          data =
+            await response.json();
+        } catch {
+          data = {};
+        }
+
+
+        if (
+          !response.ok
+        ) {
+
+          let detail =
+            "Registration failed.";
+
+
+          if (
+            typeof data.detail ===
+            "string"
+          ) {
+
+            detail =
+              data.detail;
+
+          } else if (
+            Array.isArray(
+              data.detail
+            )
+          ) {
+
+            detail =
+              data.detail
+                .map(
+                  (item) =>
+                    item.msg ||
+                    "Invalid input"
+                )
+                .join(", ");
+          }
+
+
+          throw new Error(
+            detail
+          );
+        }
+
+
+        setUsername("");
+        setEmail("");
+        setPassword("");
+
+
+        setUsernameStatus(
+          "idle"
+        );
+
+        setUsernameStatusMessage(
+          ""
+        );
+
+
+        setMessage(
+          "Account created successfully. Please login."
+        );
+
+
+        setPage(
+          "login"
+        );
+
+      } catch (err) {
+
+        console.error(
+          err
+        );
+
+        setError(
+          err.message ||
+          "Registration failed."
+        );
+
+      } finally {
+
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  // =====================================================
+  // LOAD FILES
+  // =====================================================
+
+  const loadFiles =
+    async (authToken) => {
+
+      if (!authToken) {
+        return;
+      }
+
+
+      try {
+
+        const receivedResponse =
+          await fetch(
+            `${API_URL}/files/my-files`,
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${authToken}`,
+              },
+            }
+          );
+
+
+        if (
+          receivedResponse.status ===
+          401
+        ) {
+
+          handleSessionExpired();
+
+          return;
+        }
+
+
+        if (
+          receivedResponse.ok
+        ) {
+
+          const data =
+            await receivedResponse.json();
+
+
+          setReceivedFiles(
+            Array.isArray(
+              data.files
+            )
+              ? data.files
+              : []
+          );
+        }
+
+
+        const sentResponse =
+          await fetch(
+            `${API_URL}/files/sent`,
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${authToken}`,
+              },
+            }
+          );
+
+
+        if (
+          sentResponse.status ===
+          401
+        ) {
+
+          handleSessionExpired();
+
+          return;
+        }
+
+
+        if (
+          sentResponse.ok
+        ) {
+
+          const data =
+            await sentResponse.json();
+
+
+          setSentFiles(
+            Array.isArray(
+              data.files
+            )
+              ? data.files
+              : []
+          );
+        }
+
+      } catch (err) {
+
+        console.error(
+          "File list error:",
+          err
+        );
+      }
+    };
+
+
+  // =====================================================
+  // SESSION EXPIRED
+  // =====================================================
+
+  const handleSessionExpired =
+    () => {
+
+      /*
+       * IMPORTANT:
+       * Only the expired JWT is removed.
+       *
+       * The username/password account is NOT
+       * deleted or modified.
+       *
+       * We keep the username in the login field
+       * to make re-login easier.
+       */
+
+      const savedUsername =
+        localStorage.getItem(
+          "vaultx_username"
+        ) ||
+        currentUser;
+
+
+      localStorage.removeItem(
+        "vaultx_token"
+      );
+
+
+      setToken("");
+
+
+      setReceivedFiles(
+        []
+      );
+
+      setSentFiles(
+        []);
+
+
+      setPage(
+        "login"
+      );
+
+
+      setUsername(
+        savedUsername || ""
+      );
+
+
+      setPassword("");
+
+
+      setError(
+        "Your session has expired. Please login again."
+      );
+    };
+
+
+  // =====================================================
+  // EXPIRATION HOURS
+  // =====================================================
+
+  const getExpirationHours =
+    () => {
+
+      if (
+        expiration ===
+        "custom"
+      ) {
+
+        return Number(
+          customHours
         );
       }
 
-      setMessage(
-        "File transfer revoked successfully."
+
+      return Number(
+        expiration
+      );
+    };
+
+
+  // =====================================================
+  // UPLOAD / SEND FILE
+  // =====================================================
+
+  const handleUpload =
+    async (e) => {
+
+      e.preventDefault();
+
+      setError("");
+      setMessage("");
+
+
+      if (!token) {
+
+        handleSessionExpired();
+
+        return;
+      }
+
+
+      if (!selectedFile) {
+
+        setError(
+          "Please select a file."
+        );
+
+        return;
+      }
+
+
+      if (!recipient.trim()) {
+
+        setError(
+          "Please enter recipient username."
+        );
+
+        return;
+      }
+
+
+      const hours =
+        getExpirationHours();
+
+
+      if (
+        !Number.isFinite(
+          hours
+        ) ||
+        hours <= 0
+      ) {
+
+        setError(
+          "Please enter a valid expiration period."
+        );
+
+        return;
+      }
+
+
+      if (
+        hours > 168
+      ) {
+
+        setError(
+          "Maximum expiration is 168 hours (7 days)."
+        );
+
+        return;
+      }
+
+
+      setLoading(
+        true
       );
 
-      await loadFiles(token);
-    } catch (err) {
-      console.error(err);
 
-      setError(
-        err.message ||
+      try {
+
+        const formData =
+          new FormData();
+
+
+        formData.append(
+          "file",
+          selectedFile
+        );
+
+
+        formData.append(
+          "recipient_username",
+          recipient.trim()
+        );
+
+
+        formData.append(
+          "expiration_hours",
+          String(hours)
+        );
+
+
+        /*
+         * REAL TRANSFER TIMER
+         *
+         * Starts immediately before the
+         * upload request.
+         */
+
+        const transferStart =
+          performance.now();
+
+
+        const response =
+          await fetch(
+            `${API_URL}/files/upload`,
+            {
+              method: "POST",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              body: formData,
+            }
+          );
+
+
+        /*
+         * Stop timer as soon as the
+         * server response arrives.
+         */
+
+        const transferEnd =
+          performance.now();
+
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          handleSessionExpired();
+
+          return;
+        }
+
+
+        let data = {};
+
+        try {
+
+          data =
+            await response.json();
+
+        } catch {
+
+          data = {};
+        }
+
+
+        if (
+          !response.ok
+        ) {
+
+          let detail =
+            "File transfer failed.";
+
+
+          if (
+            typeof data.detail ===
+            "string"
+          ) {
+
+            detail =
+              data.detail;
+          }
+
+
+          throw new Error(
+            detail
+          );
+        }
+
+
+        // -------------------------------------------------
+        // REAL TRANSFER TIME
+        // -------------------------------------------------
+
+        const measuredTransferTime =
+          Math.max(
+            transferEnd -
+              transferStart,
+            0.001
+          );
+
+
+        // -------------------------------------------------
+        // REAL TRANSFER SPEED
+        //
+        // Bytes / seconds
+        // converted to MB/s
+        // -------------------------------------------------
+
+        const transferSeconds =
+          measuredTransferTime /
+          1000;
+
+
+        const measuredSpeed =
+          (
+            selectedFile.size /
+            transferSeconds
+          ) /
+          (1024 * 1024);
+
+
+        // -------------------------------------------------
+        // REAL ENCRYPTION TIME
+        // -------------------------------------------------
+
+        const measuredEncryptionTime =
+          typeof data.encryption_time_ms ===
+          "number"
+            ? data.encryption_time_ms
+            : null;
+
+
+        // -------------------------------------------------
+        // SAVE MEASUREMENTS
+        // -------------------------------------------------
+
+        savePerformance({
+          encryption:
+            measuredEncryptionTime,
+
+          transfer:
+            measuredTransferTime,
+
+          speed:
+            measuredSpeed,
+
+          fileSize:
+            selectedFile.size,
+        });
+
+
+        setMessage(
+          "File encrypted and sent successfully."
+        );
+
+
+        setSelectedFile(
+          null
+        );
+
+        setRecipient(
+          ""
+        );
+
+        setExpiration(
+          "24"
+        );
+
+        setCustomHours(
+          ""
+        );
+
+
+        const fileInput =
+          document.getElementById(
+            "file-upload"
+          );
+
+
+        if (fileInput) {
+          fileInput.value = "";
+        }
+
+
+        await loadFiles(
+          token
+        );
+
+      } catch (err) {
+
+        console.error(
+          err
+        );
+
+        setError(
+          err.message ||
+          "File transfer failed."
+        );
+
+      } finally {
+
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  // =====================================================
+  // DOWNLOAD FILE
+  // =====================================================
+
+  const handleDownload =
+    async (
+      fileId,
+      filename,
+      knownFileSize
+    ) => {
+
+      setError("");
+      setMessage("");
+
+
+      if (!token) {
+
+        handleSessionExpired();
+
+        return;
+      }
+
+
+      setLoading(
+        true
+      );
+
+
+      try {
+
+        /*
+         * REAL DOWNLOAD TIMER
+         */
+
+        const transferStart =
+          performance.now();
+
+
+        const response =
+          await fetch(
+            `${API_URL}/files/${fileId}/download`,
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          handleSessionExpired();
+
+          return;
+        }
+
+
+        if (
+          !response.ok
+        ) {
+
+          let detail =
+            "Download failed.";
+
+
+          try {
+
+            const data =
+              await response.json();
+
+
+            if (
+              typeof data.detail ===
+              "string"
+            ) {
+
+              detail =
+                data.detail;
+            }
+
+          } catch {}
+
+
+          throw new Error(
+            detail
+          );
+        }
+
+
+        // -------------------------------------------------
+        // READ DECRYPTION TIME
+        // -------------------------------------------------
+
+        const decryptionHeader =
+          response.headers.get(
+            "X-VaultX-Decryption-Time-Ms"
+          );
+
+
+        let measuredDecryptionTime =
+          null;
+
+
+        if (
+          decryptionHeader !==
+          null
+        ) {
+
+          const parsedTime =
+            Number(
+              decryptionHeader
+            );
+
+
+          if (
+            Number.isFinite(
+              parsedTime
+            )
+          ) {
+
+            measuredDecryptionTime =
+              parsedTime;
+          }
+        }
+
+
+        // -------------------------------------------------
+        // GET COMPLETE FILE
+        // -------------------------------------------------
+
+        const blob =
+          await response.blob();
+
+
+        /*
+         * The timer ends after the complete
+         * decrypted file has reached the browser.
+         */
+
+        const transferEnd =
+          performance.now();
+
+
+        const measuredTransferTime =
+          Math.max(
+            transferEnd -
+              transferStart,
+            0.001
+          );
+
+
+        // -------------------------------------------------
+        // FILE SIZE
+        // -------------------------------------------------
+
+        const responseFileSize =
+          Number(
+            response.headers.get(
+              "X-VaultX-File-Size"
+            )
+          );
+
+
+        const actualFileSize =
+          Number.isFinite(
+            responseFileSize
+          ) &&
+          responseFileSize > 0
+            ? responseFileSize
+            : (
+                blob.size ||
+                Number(knownFileSize) ||
+                0
+              );
+
+
+        // -------------------------------------------------
+        // TRANSFER SPEED
+        // -------------------------------------------------
+
+        const transferSeconds =
+          measuredTransferTime /
+          1000;
+
+
+        const measuredSpeed =
+          actualFileSize > 0
+            ? (
+                actualFileSize /
+                transferSeconds
+              ) /
+              (1024 * 1024)
+            : null;
+
+
+        // -------------------------------------------------
+        // SAVE DOWNLOAD MEASUREMENTS
+        // -------------------------------------------------
+
+        savePerformance({
+          decryption:
+            measuredDecryptionTime,
+
+          transfer:
+            measuredTransferTime,
+
+          speed:
+            measuredSpeed,
+
+          fileSize:
+            actualFileSize,
+        });
+
+
+        // -------------------------------------------------
+        // DOWNLOAD FILE
+        // -------------------------------------------------
+
+        const url =
+          window.URL.createObjectURL(
+            blob
+          );
+
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+
+        link.href =
+          url;
+
+
+        link.download =
+          filename ||
+          "downloaded_file";
+
+
+        document.body.appendChild(
+          link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        window.URL.revokeObjectURL(
+          url
+        );
+
+
+        setMessage(
+          "File decrypted and downloaded successfully."
+        );
+
+      } catch (err) {
+
+        console.error(
+          err
+        );
+
+        setError(
+          err.message ||
+          "Download failed."
+        );
+
+      } finally {
+
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  // =====================================================
+  // REVOKE FILE
+  // =====================================================
+
+  const handleRevoke =
+    async (fileId) => {
+
+      setError("");
+      setMessage("");
+
+
+      if (!token) {
+
+        handleSessionExpired();
+
+        return;
+      }
+
+
+      const confirmed =
+        window.confirm(
+          "Are you sure you want to revoke this file? The recipient will no longer be able to download it."
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      setLoading(
+        true
+      );
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_URL}/files/${fileId}`,
+            {
+              method: "DELETE",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          handleSessionExpired();
+
+          return;
+        }
+
+
+        let data = {};
+
+        try {
+          data =
+            await response.json();
+        } catch {
+          data = {};
+        }
+
+
+        if (
+          !response.ok
+        ) {
+
+          throw new Error(
+            typeof data.detail ===
+            "string"
+              ? data.detail
+              : "Failed to revoke file."
+          );
+        }
+
+
+        setMessage(
+          "File transfer revoked successfully."
+        );
+
+
+        await loadFiles(
+          token
+        );
+
+      } catch (err) {
+
+        console.error(
+          err
+        );
+
+        setError(
+          err.message ||
           "Failed to revoke file."
+        );
+
+      } finally {
+
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
+  const handleLogout =
+    () => {
+
+      localStorage.removeItem(
+        "vaultx_token"
       );
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleLogout = () => {
-    localStorage.removeItem(
-      "vaultx_token"
-    );
+      localStorage.removeItem(
+        "vaultx_username"
+      );
 
-    localStorage.removeItem(
-      "vaultx_username"
-    );
+      localStorage.removeItem(
+        "vaultx_encryption_time"
+      );
 
-    setToken("");
-    setCurrentUser("");
+      localStorage.removeItem(
+        "vaultx_decryption_time"
+      );
 
-    setReceivedFiles([]);
-    setSentFiles([]);
+      localStorage.removeItem(
+        "vaultx_transfer_time"
+      );
 
-    setUsername("");
-    setEmail("");
-    setPassword("");
+      localStorage.removeItem(
+        "vaultx_transfer_speed"
+      );
 
-    setSelectedFile(null);
-    setRecipient("");
+      localStorage.removeItem(
+        "vaultx_file_size"
+      );
 
-    setExpiration("24");
-    setCustomHours("");
 
-    setEncryptionTime(null);
-    setDecryptionTime(null);
+      setToken("");
 
-    setMessage("");
-    setError("");
+      setCurrentUser("");
 
-    setPage("login");
-  };
+      setReceivedFiles([]);
 
-  const formatFileSize = (
-    bytes
-  ) => {
-    if (!bytes) {
-      return "0 Bytes";
-    }
+      setSentFiles([]);
 
-    const units = [
-      "Bytes",
-      "KB",
-      "MB",
-      "GB",
-    ];
+      setUsername("");
 
-    const index = Math.min(
-      Math.floor(
-        Math.log(bytes) /
-          Math.log(1024)
-      ),
-      units.length - 1
-    );
+      setEmail("");
 
-    return `${(
-      bytes /
-      Math.pow(1024, index)
-    ).toFixed(2)} ${
-      units[index]
-    }`;
-  };
+      setPassword("");
 
-  const formatDate = (
-    date
-  ) => {
-    if (!date) {
-      return "Unknown";
-    }
+      setSelectedFile(null);
 
-    const parsedDate =
-      new Date(date);
+      setRecipient("");
 
-    if (
-      Number.isNaN(
-        parsedDate.getTime()
-      )
-    ) {
-      return "Unknown";
-    }
+      setExpiration("24");
 
-    return parsedDate.toLocaleString(
-      "en-IN"
-    );
-  };
+      setCustomHours("");
 
-  if (page === "login") {
+      setEncryptionTime(null);
+
+      setDecryptionTime(null);
+
+      setTransferTime(null);
+
+      setTransferSpeed(null);
+
+      setPerformanceFileSize(null);
+
+      setMessage("");
+
+      setError("");
+
+      setPage("login");
+    };
+
+
+  // =====================================================
+  // FORMAT FILE SIZE
+  // =====================================================
+
+  const formatFileSize =
+    (bytes) => {
+
+      if (
+        !bytes ||
+        bytes <= 0
+      ) {
+
+        return "0 Bytes";
+      }
+
+
+      const units = [
+        "Bytes",
+        "KB",
+        "MB",
+        "GB",
+      ];
+
+
+      const index =
+        Math.min(
+          Math.floor(
+            Math.log(bytes) /
+            Math.log(1024)
+          ),
+          units.length - 1
+        );
+
+
+      return (
+        `${(
+          bytes /
+          Math.pow(
+            1024,
+            index
+          )
+        ).toFixed(2)} ${
+          units[index]
+        }`
+      );
+    };
+
+
+  // =====================================================
+  // FORMAT TIME
+  // =====================================================
+
+  const formatMilliseconds =
+    (milliseconds) => {
+
+      if (
+        milliseconds === null ||
+        milliseconds === undefined ||
+        !Number.isFinite(
+          Number(milliseconds)
+        )
+      ) {
+
+        return "—";
+      }
+
+
+      return `${Number(
+        milliseconds
+      ).toFixed(3)} ms`;
+    };
+
+
+  // =====================================================
+  // FORMAT TRANSFER SPEED
+  // =====================================================
+
+  const formatSpeed =
+    (speed) => {
+
+      if (
+        speed === null ||
+        speed === undefined ||
+        !Number.isFinite(
+          Number(speed)
+        )
+      ) {
+
+        return "—";
+      }
+
+
+      return `${Number(
+        speed
+      ).toFixed(2)} MB/s`;
+    };
+
+
+  // =====================================================
+  // FORMAT TRANSFER TIME
+  // =====================================================
+
+  const formatTransferTime =
+    (milliseconds) => {
+
+      if (
+        milliseconds === null ||
+        milliseconds === undefined ||
+        !Number.isFinite(
+          Number(milliseconds)
+        )
+      ) {
+
+        return "—";
+      }
+
+
+      if (
+        milliseconds < 1000
+      ) {
+
+        return `${Number(
+          milliseconds
+        ).toFixed(2)} ms`;
+      }
+
+
+      return `${(
+        Number(milliseconds) /
+        1000
+      ).toFixed(2)} s`;
+    };
+
+
+  // =====================================================
+  // FORMAT DATE
+  // =====================================================
+
+  const formatDate =
+    (date) => {
+
+      if (!date) {
+        return "Unknown";
+      }
+
+
+      const parsedDate =
+        new Date(date);
+
+
+      if (
+        Number.isNaN(
+          parsedDate.getTime()
+        )
+      ) {
+
+        return "Unknown";
+      }
+
+
+      return parsedDate.toLocaleString(
+        "en-IN"
+      );
+    };
+
+
+  // =====================================================
+  // LOGIN PAGE
+  // =====================================================
+
+  if (
+    page === "login"
+  ) {
+
     return (
+
       <div className="app">
+
         <div className="login-card">
 
           <div className="logo">
             🔐
           </div>
 
-          <h1>VaultX</h1>
+
+          <h1>
+            VaultX
+          </h1>
+
 
           <p className="subtitle">
             Secure End-to-End File Transfer
           </p>
+
 
           {message && (
             <div className="success">
@@ -822,18 +1966,24 @@ function App() {
             </div>
           )}
 
+
           {error && (
             <div className="error">
               {error}
             </div>
           )}
 
+
           <form
-            onSubmit={handleLogin}
+            onSubmit={
+              handleLogin
+            }
           >
+
             <label>
               Username
             </label>
+
 
             <input
               type="text"
@@ -848,9 +1998,11 @@ function App() {
               autoComplete="username"
             />
 
+
             <label>
               Password
             </label>
+
 
             <input
               type="password"
@@ -865,54 +2017,85 @@ function App() {
               autoComplete="current-password"
             />
 
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={
+                loading
+              }
             >
               {loading
                 ? "Signing in..."
                 : "Login"}
             </button>
+
           </form>
+
 
           <button
             type="button"
             className="secondary-button register-switch"
             onClick={() => {
+
               setError("");
+
               setMessage("");
+
               setUsername("");
+
               setEmail("");
+
               setPassword("");
-              setPage("register");
+
+              setPage(
+                "register"
+              );
+
             }}
           >
             Create New Account
           </button>
+
 
           <div className="security-note">
             🔒 AES-256-GCM • RSA-2048 • SHA-256
           </div>
 
         </div>
+
       </div>
     );
   }
 
-  if (page === "register") {
+
+  // =====================================================
+  // REGISTER PAGE
+  // =====================================================
+
+  if (
+    page === "register"
+  ) {
+
     return (
+
       <div className="app">
+
         <div className="login-card">
 
           <div className="logo">
             🔐
           </div>
 
-          <h1>Create Account</h1>
+
+          <h1>
+            Create Account
+          </h1>
+
 
           <p className="subtitle">
             Create your secure VaultX account
           </p>
+
 
           {message && (
             <div className="success">
@@ -920,18 +2103,24 @@ function App() {
             </div>
           )}
 
+
           {error && (
             <div className="error">
               {error}
             </div>
           )}
 
+
           <form
-            onSubmit={handleRegister}
+            onSubmit={
+              handleRegister
+            }
           >
+
             <label>
               Username
             </label>
+
 
             <input
               type="text"
@@ -945,33 +2134,48 @@ function App() {
               required
             />
 
+
             {usernameStatusMessage && (
+
               <div
                 className={
-                  usernameStatus === "available"
+                  usernameStatus ===
+                  "available"
                     ? "success"
-                    : usernameStatus === "checking"
+                    : usernameStatus ===
+                      "checking"
                     ? "subtitle"
                     : "error"
                 }
                 style={{
                   margin: 0,
-                  padding: "8px 12px",
-                  fontSize: "13px",
+                  padding:
+                    "8px 12px",
+                  fontSize:
+                    "13px",
                 }}
               >
-                {usernameStatus === "available"
+
+                {usernameStatus ===
+                "available"
                   ? "✓ "
-                  : usernameStatus === "checking"
+                  : usernameStatus ===
+                    "checking"
                   ? "⏳ "
                   : "✕ "}
-                {usernameStatusMessage}
+
+                {
+                  usernameStatusMessage
+                }
+
               </div>
             )}
+
 
             <label>
               Email
             </label>
+
 
             <input
               type="email"
@@ -985,9 +2189,11 @@ function App() {
               required
             />
 
+
             <label>
               Password
             </label>
+
 
             <input
               type="password"
@@ -1002,50 +2208,78 @@ function App() {
               minLength={6}
             />
 
+
             <button
               type="submit"
               disabled={
                 loading ||
-                usernameStatus === "taken" ||
-                usernameStatus === "checking"
+                usernameStatus ===
+                  "taken" ||
+                usernameStatus ===
+                  "checking"
               }
             >
               {loading
                 ? "Creating account..."
                 : "Create Account"}
             </button>
+
           </form>
+
 
           <button
             type="button"
             className="secondary-button register-switch"
             onClick={() => {
+
               setError("");
+
               setMessage("");
+
               setUsername("");
+
               setEmail("");
+
               setPassword("");
-              setPage("login");
+
+              setPage(
+                "login"
+              );
+
             }}
           >
             Back to Login
           </button>
+
 
           <div className="security-note">
             🔑 RSA-2048 key pair generated automatically
           </div>
 
         </div>
+
       </div>
     );
   }
 
+
+  // =====================================================
+  // DASHBOARD
+  // =====================================================
+
   return (
+
     <div className="dashboard">
+
+
+      {/* =================================================
+          TOP BAR
+      ================================================= */}
 
       <header className="topbar">
 
         <div>
+
           <h1>
             VaultX Dashboard
           </h1>
@@ -1053,7 +2287,9 @@ function App() {
           <span>
             Secure End-to-End File Transfer System
           </span>
+
         </div>
+
 
         <div className="user-area">
 
@@ -1069,9 +2305,12 @@ function App() {
 
           </div>
 
+
           <button
             className="logout"
-            onClick={handleLogout}
+            onClick={
+              handleLogout
+            }
           >
             Logout
           </button>
@@ -1080,7 +2319,9 @@ function App() {
 
       </header>
 
+
       <main className="content">
+
 
         {message && (
           <div className="success">
@@ -1088,27 +2329,35 @@ function App() {
           </div>
         )}
 
+
         {error && (
           <div className="error">
             {error}
           </div>
         )}
 
-        {/* DASHBOARD OVERVIEW */}
+
+        {/* =================================================
+            DASHBOARD OVERVIEW
+        ================================================= */}
 
         <section className="dashboard-overview">
 
           <div className="overview-heading">
+
             <h2>
               Dashboard Overview
             </h2>
 
             <p>
-              Monitor your secure file transfers.
+              Monitor your secure file transfers and performance.
             </p>
+
           </div>
 
+
           <div className="stats-grid">
+
 
             <div className="stat-card">
 
@@ -1117,6 +2366,7 @@ function App() {
               </div>
 
               <div>
+
                 <strong>
                   {sentFiles.length}
                 </strong>
@@ -1124,9 +2374,11 @@ function App() {
                 <span>
                   Files Sent
                 </span>
+
               </div>
 
             </div>
+
 
             <div className="stat-card">
 
@@ -1135,6 +2387,7 @@ function App() {
               </div>
 
               <div>
+
                 <strong>
                   {receivedFiles.length}
                 </strong>
@@ -1142,9 +2395,11 @@ function App() {
                 <span>
                   Files Received
                 </span>
+
               </div>
 
             </div>
+
 
             <div className="stat-card">
 
@@ -1153,6 +2408,7 @@ function App() {
               </div>
 
               <div>
+
                 <strong>
                   {totalFiles}
                 </strong>
@@ -1160,9 +2416,11 @@ function App() {
                 <span>
                   Total Transfers
                 </span>
+
               </div>
 
             </div>
+
 
             <div className="stat-card">
 
@@ -1171,18 +2429,21 @@ function App() {
               </div>
 
               <div>
+
                 <strong>
-                  {encryptionTime !== null
-                    ? `${encryptionTime} ms`
-                    : "—"}
+                  {formatMilliseconds(
+                    encryptionTime
+                  )}
                 </strong>
 
                 <span>
-                  Last Encryption Time
+                  Encryption Time
                 </span>
+
               </div>
 
             </div>
+
 
             <div className="stat-card">
 
@@ -1191,49 +2452,244 @@ function App() {
               </div>
 
               <div>
+
                 <strong>
-                  {decryptionTime !== null
-                    ? `${decryptionTime} ms`
+                  {formatMilliseconds(
+                    decryptionTime
+                  )}
+                </strong>
+
+                <span>
+                  Decryption Time
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div className="stat-card">
+
+              <div className="stat-icon">
+                ⏱️
+              </div>
+
+              <div>
+
+                <strong>
+                  {formatTransferTime(
+                    transferTime
+                  )}
+                </strong>
+
+                <span>
+                  Transfer Time
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div className="stat-card">
+
+              <div className="stat-icon">
+                🚀
+              </div>
+
+              <div>
+
+                <strong>
+                  {formatSpeed(
+                    transferSpeed
+                  )}
+                </strong>
+
+                <span>
+                  Transfer Speed
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div className="stat-card">
+
+              <div className="stat-icon">
+                📦
+              </div>
+
+              <div>
+
+                <strong>
+                  {performanceFileSize !==
+                  null
+                    ? formatFileSize(
+                        performanceFileSize
+                      )
                     : "—"}
                 </strong>
 
                 <span>
-                  Last Decryption Time
+                  File Size
                 </span>
+
               </div>
 
             </div>
+
 
           </div>
 
         </section>
 
-        {/* SEND FILE */}
+
+        {/* =================================================
+            PERFORMANCE INFORMATION
+        ================================================= */}
 
         <section className="card">
 
           <div className="section-header">
 
             <div>
+
+              <h2>
+                📊 Performance Measurement
+              </h2>
+
+              <p>
+                Measurements are captured from actual file transfer operations.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div className="performance-grid">
+
+            <div className="performance-item">
+
+              <span>
+                Encryption Time
+              </span>
+
+              <strong>
+                {formatMilliseconds(
+                  encryptionTime
+                )}
+              </strong>
+
+            </div>
+
+
+            <div className="performance-item">
+
+              <span>
+                Decryption Time
+              </span>
+
+              <strong>
+                {formatMilliseconds(
+                  decryptionTime
+                )}
+              </strong>
+
+            </div>
+
+
+            <div className="performance-item">
+
+              <span>
+                Transfer Time
+              </span>
+
+              <strong>
+                {formatTransferTime(
+                  transferTime
+                )}
+              </strong>
+
+            </div>
+
+
+            <div className="performance-item">
+
+              <span>
+                Transfer Speed
+              </span>
+
+              <strong>
+                {formatSpeed(
+                  transferSpeed
+                )}
+              </strong>
+
+            </div>
+
+
+            <div className="performance-item">
+
+              <span>
+                File Size
+              </span>
+
+              <strong>
+                {performanceFileSize !==
+                null
+                  ? formatFileSize(
+                      performanceFileSize
+                    )
+                  : "—"}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <p className="performance-note">
+            Encryption and decryption times measure cryptographic processing on the server. Transfer time measures the actual browser file-transfer operation. Transfer speed is calculated from file size and measured transfer time.
+          </p>
+
+        </section>
+
+
+        {/* =================================================
+            SEND FILE
+        ================================================= */}
+
+        <section className="card">
+
+          <div className="section-header">
+
+            <div>
+
               <h2>
                 📤 Send Secure File
               </h2>
 
               <p>
-                Your file is encrypted before
-                storage using AES-256-GCM.
+                Your file is encrypted before storage using AES-256-GCM.
               </p>
+
             </div>
 
           </div>
 
+
           <form
-            onSubmit={handleUpload}
+            onSubmit={
+              handleUpload
+            }
           >
 
             <label>
               Select File
             </label>
+
 
             <input
               id="file-upload"
@@ -1247,7 +2703,9 @@ function App() {
               required
             />
 
+
             {selectedFile && (
+
               <div className="selected-file">
 
                 Selected:
@@ -1265,9 +2723,11 @@ function App() {
               </div>
             )}
 
+
             <label>
               Recipient Username
             </label>
+
 
             <input
               type="text"
@@ -1281,18 +2741,23 @@ function App() {
               required
             />
 
+
             <label>
               File Expiration
             </label>
 
+
             <select
-              value={expiration}
+              value={
+                expiration
+              }
               onChange={(e) =>
                 setExpiration(
                   e.target.value
                 )
               }
             >
+
               <option value="1">
                 1 Hour
               </option>
@@ -1324,15 +2789,21 @@ function App() {
               <option value="custom">
                 Custom
               </option>
+
             </select>
 
-            {expiration === "custom" && (
+
+            {expiration ===
+              "custom" && (
+
               <input
                 type="number"
                 min="1"
                 max="168"
                 placeholder="Hours (1–168)"
-                value={customHours}
+                value={
+                  customHours
+                }
                 onChange={(e) =>
                   setCustomHours(
                     e.target.value
@@ -1342,26 +2813,35 @@ function App() {
               />
             )}
 
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={
+                loading
+              }
             >
+
               {loading
                 ? "Encrypting & Sending..."
                 : "🔒 Encrypt & Send File"}
+
             </button>
 
           </form>
 
         </section>
 
-        {/* RECEIVED FILES */}
+
+        {/* =================================================
+            RECEIVED FILES
+        ================================================= */}
 
         <section className="card">
 
           <div className="section-header">
 
             <div>
+
               <h2>
                 📥 Received Files
               </h2>
@@ -1369,21 +2849,29 @@ function App() {
               <p>
                 Files securely sent to you.
               </p>
+
             </div>
+
 
             <button
               className="small-button secondary-button"
               onClick={() =>
-                loadFiles(token)
+                loadFiles(
+                  token
+                )
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
             >
               ↻ Refresh
             </button>
 
           </div>
 
-          {receivedFiles.length === 0 ? (
+
+          {receivedFiles.length ===
+          0 ? (
 
             <div className="empty">
 
@@ -1396,8 +2884,7 @@ function App() {
               </strong>
 
               <span>
-                Files sent to your account
-                will appear here.
+                Files sent to your account will appear here.
               </span>
 
             </div>
@@ -1411,7 +2898,9 @@ function App() {
 
                   <div
                     className="file-item"
-                    key={file.file_id}
+                    key={
+                      file.file_id
+                    }
                   >
 
                     <div className="file-info">
@@ -1450,14 +2939,18 @@ function App() {
 
                     </div>
 
+
                     <button
                       onClick={() =>
                         handleDownload(
                           file.file_id,
-                          file.filename
+                          file.filename,
+                          file.file_size
                         )
                       }
-                      disabled={loading}
+                      disabled={
+                        loading
+                      }
                     >
                       🔓 Download
                     </button>
@@ -1468,18 +2961,21 @@ function App() {
               )}
 
             </div>
-
           )}
 
         </section>
 
-        {/* SENT FILES */}
+
+        {/* =================================================
+            SENT FILES
+        ================================================= */}
 
         <section className="card">
 
           <div className="section-header">
 
             <div>
+
               <h2>
                 📤 Sent Files
               </h2>
@@ -1487,21 +2983,29 @@ function App() {
               <p>
                 Files you have securely transferred.
               </p>
+
             </div>
+
 
             <button
               className="small-button secondary-button"
               onClick={() =>
-                loadFiles(token)
+                loadFiles(
+                  token
+                )
               }
-              disabled={loading}
+              disabled={
+                loading
+              }
             >
               ↻ Refresh
             </button>
 
           </div>
 
-          {sentFiles.length === 0 ? (
+
+          {sentFiles.length ===
+          0 ? (
 
             <div className="empty">
 
@@ -1528,7 +3032,9 @@ function App() {
 
                   <div
                     className="file-item"
-                    key={file.file_id}
+                    key={
+                      file.file_id
+                    }
                   >
 
                     <div className="file-info">
@@ -1567,6 +3073,7 @@ function App() {
 
                     </div>
 
+
                     <button
                       className="danger"
                       onClick={() =>
@@ -1574,7 +3081,9 @@ function App() {
                           file.file_id
                         )
                       }
-                      disabled={loading}
+                      disabled={
+                        loading
+                      }
                     >
                       🗑 Revoke
                     </button>
@@ -1585,12 +3094,14 @@ function App() {
               )}
 
             </div>
-
           )}
 
         </section>
 
-        {/* SECURITY */}
+
+        {/* =================================================
+            SECURITY
+        ================================================= */}
 
         <section className="security-card">
 
@@ -1598,14 +3109,16 @@ function App() {
             🛡 VaultX Security
           </h2>
 
+
           <p className="security-description">
-            VaultX uses multiple cryptographic
-            layers to protect transferred files.
+            VaultX uses multiple cryptographic layers to protect transferred files.
           </p>
+
 
           <div className="security-grid">
 
             <div>
+
               <strong>
                 AES-256-GCM
               </strong>
@@ -1613,9 +3126,12 @@ function App() {
               <span>
                 File Encryption
               </span>
+
             </div>
 
+
             <div>
+
               <strong>
                 RSA-2048
               </strong>
@@ -1623,9 +3139,12 @@ function App() {
               <span>
                 AES Key Protection
               </span>
+
             </div>
 
+
             <div>
+
               <strong>
                 SHA-256
               </strong>
@@ -1633,9 +3152,12 @@ function App() {
               <span>
                 Integrity Verification
               </span>
+
             </div>
 
+
             <div>
+
               <strong>
                 JWT
               </strong>
@@ -1643,16 +3165,19 @@ function App() {
               <span>
                 Authentication
               </span>
+
             </div>
 
           </div>
 
         </section>
 
+
       </main>
 
     </div>
   );
 }
+
 
 export default App;

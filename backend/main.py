@@ -17,24 +17,38 @@ from routes.files import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create database tables if they do not exist
-    Base.metadata.create_all(bind=engine)
 
-    # Remove expired files when the server starts
+    # Create database tables if they do not exist
+    Base.metadata.create_all(
+        bind=engine
+    )
+
+    # Remove expired files
     db = SessionLocal()
 
     try:
+
         cleanup_expired_files(db)
+
     except Exception as exc:
-        print(f"Startup cleanup warning: {exc}")
+
+        print(
+            f"Startup cleanup warning: {exc}"
+        )
+
     finally:
+
         db.close()
 
-    print("VaultX API started successfully.")
+    print(
+        "VaultX API started successfully."
+    )
 
     yield
 
-    print("VaultX API shutting down.")
+    print(
+        "VaultX API shutting down."
+    )
 
 
 # =========================================================
@@ -43,7 +57,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="VaultX",
-    description="Secure End-to-End File Transfer System",
+    description=(
+        "Secure End-to-End File Transfer System"
+    ),
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -55,13 +71,32 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+
     allow_origins=[
         "http://localhost:5173",
         "https://beautiful-valkyrie-2a7bed.netlify.app",
     ],
+
     allow_credentials=True,
+
     allow_methods=["*"],
+
     allow_headers=["*"],
+
+    # -----------------------------------------------------
+    # IMPORTANT:
+    # Allows the React frontend to read custom
+    # performance/security headers returned by FastAPI.
+    # -----------------------------------------------------
+
+    expose_headers=[
+        "X-VaultX-Decryption-Time-Ms",
+        "X-VaultX-File-Size",
+        "X-VaultX-Encryption",
+        "X-VaultX-Key-Protection",
+        "X-VaultX-Integrity",
+        "X-VaultX-Integrity-Verified",
+    ],
 )
 
 
@@ -69,8 +104,13 @@ app.add_middleware(
 # API ROUTES
 # =========================================================
 
-app.include_router(auth_router)
-app.include_router(files_router)
+app.include_router(
+    auth_router
+)
+
+app.include_router(
+    files_router
+)
 
 
 # =========================================================
@@ -79,8 +119,11 @@ app.include_router(files_router)
 
 @app.get("/")
 def root():
+
     return {
-        "message": "VaultX API is running",
+        "message": (
+            "VaultX API is running"
+        ),
         "status": "online",
         "version": "1.0.0",
     }
@@ -88,6 +131,7 @@ def root():
 
 @app.get("/health")
 def health_check():
+
     return {
         "status": "healthy",
         "service": "VaultX API",
